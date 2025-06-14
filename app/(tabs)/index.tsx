@@ -13,6 +13,8 @@ export default function HomeScreen() {
         Understand your pet’s feelings through the magic of AI
       </Text>
 
+      <Text style={styles.chooseText}>Choose your pet</Text>
+
       <View style={styles.petButtons}>
         <TouchableOpacity
           style={[styles.petButton, selectedPet === 'cat' && styles.activePetButton]}
@@ -29,8 +31,15 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.startButton} onPress={() => router.push('/login')}>
-        <Text style={styles.startButtonText}>Start Journal</Text>
+      <TouchableOpacity
+        style={[
+          styles.startButton,
+          !selectedPet && styles.disabledButton,
+        ]}
+        onPress={() => selectedPet && router.push('/login')}
+        disabled={!selectedPet}
+      >
+        <Text style={styles.startButtonText}>Let's Go!</Text>
       </TouchableOpacity>
     </View>
   );
@@ -55,6 +64,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 10,
     maxWidth: 300,
+  },
+  chooseText: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginTop: 20,
+    color: '#444',
   },
   petButtons: {
     flexDirection: 'row',
@@ -84,6 +99,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 30,
     paddingVertical: 15,
+  },
+  disabledButton: {
+    backgroundColor: '#f9aab5',
   },
   startButtonText: {
     fontSize: 16,

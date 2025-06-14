@@ -1,33 +1,31 @@
-// app/(upload)/result.tsx
-
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { image } = useLocalSearchParams(); // 接收從 upload 傳來的圖片參數
+  const { image } = useLocalSearchParams(); // Get image URI from previous screen
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bounceAnim = useRef(new Animated.Value(1)).current;
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    // 淡入動畫
+    // Fade-in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
     }).start();
 
-    // 成功 bounce 動畫
+    // Bounce animation
     Animated.sequence([
       Animated.delay(300),
       Animated.spring(bounceAnim, {
@@ -46,18 +44,36 @@ export default function ResultScreen() {
   }, []);
 
   const handleGenerate = () => {
-    // router.push('/(diary)/diary');
+    router.push({
+      pathname: '/diary-result', // same folder route
+      params: {
+        imageUri: image?.toString(),
+      },
+    });
   };
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {showConfetti && <ConfettiCannon count={60} origin={{ x: 160, y: -10 }} fadeOut fallSpeed={3000} />}
+      {showConfetti && (
+        <ConfettiCannon
+          count={60}
+          origin={{ x: 160, y: -10 }}
+          fadeOut
+          fallSpeed={3000}
+        />
+      )}
 
-      <Animated.Text style={[styles.title, { transform: [{ scale: bounceAnim }] }]}>Emotion Detected!</Animated.Text>
+      <Animated.Text
+        style={[styles.title, { transform: [{ scale: bounceAnim }] }]}
+      >
+        Emotion Detected!
+      </Animated.Text>
 
       <View style={styles.resultBox}>
         <Image
-          source={image ? { uri: image.toString() } : require('@/assets/images/default-cat.png')}
+          source={
+            image ? { uri: image.toString() } : require('@/assets/images/default-cat.png')
+          }
           style={styles.petImage}
         />
         <Text style={styles.emotion}>Grumpy</Text>
