@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
+import AudioPlayer from '@/components/AudioPlayer';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
@@ -18,6 +18,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'; 
 
 export default function DiaryResultScreen() {
   const { imageUri } = useLocalSearchParams();
@@ -26,16 +27,17 @@ export default function DiaryResultScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration] = useState(30);
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [diaryText, setDiaryText] = useState(
     `Today, the grumpiness in my heart is clear for all to see. It’s best to stay out of my way, unless you have some particularly tasty treats to offer!`
   );
   const [isEditing, setIsEditing] = useState(false);
   const emotion = 'Grumpy';
-  const mockAudioUri = 'https://example.com/fake-audio.mp3';
+  const mockAudioUri = 'https://res.cloudinary.com/dwmldyqmt/video/upload/v1748822686/cat_audio/mi9n0xro4wqcp1y9iafx.mp3';
+
+  const player = useAudioPlayer({ uri: mockAudioUri });
+  const playerStatus = useAudioPlayerStatus(player);
   const inputRef = useRef<TextInput>(null);
 
   const handleSaveText = () => {
@@ -61,6 +63,9 @@ export default function DiaryResultScreen() {
   };
 
   const handleFinalSave = () => {
+    // pause audio when click save button
+    if (playerStatus.playing) player.pause()
+
     const dataToSave = {
       imageUri,
       emotion,
@@ -77,6 +82,9 @@ export default function DiaryResultScreen() {
   };
 
   const goHome = () => {
+    // pause audio
+    if (playerStatus.playing) player.pause()
+
     router.push('/(tabs)/home');
   };
 
@@ -141,42 +149,7 @@ export default function DiaryResultScreen() {
             )
           ) : (
             <>
-              <View style={styles.audioPlayer}>
-                <View style={styles.sliderRow}>
-                  <Text style={styles.timeText}>
-                    {Math.floor(progress / 60)}:{String(Math.floor(progress % 60)).padStart(2, '0')}
-                  </Text>
-
-                  <Slider
-                    style={{ flex: 1, marginHorizontal: 10 }}
-                    minimumValue={0}
-                    maximumValue={duration}
-                    value={progress}
-                    onValueChange={val => setProgress(Math.floor(val))}
-                    minimumTrackTintColor="#7d57c7"
-                    maximumTrackTintColor="#ccc"
-                    thumbTintColor="#7d57c7"
-                  />
-
-                  <Text style={styles.timeText}>
-                    {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}
-                  </Text>
-                </View>
-
-                <View style={styles.audioControls}>
-                  <TouchableOpacity onPress={() => setProgress(Math.max(progress - 5, 0))}>
-                    <Feather name="rewind" size={26} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => setIsPlaying(!isPlaying)}>
-                    <Feather name={isPlaying ? 'pause' : 'play'} size={26} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => setProgress(Math.min(progress + 5, duration))}>
-                    <Feather name="fast-forward" size={26} />
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <AudioPlayer player={player} playerStatus={playerStatus}/>
 
               <View style={styles.bottomButtons}>
                 <TouchableOpacity style={styles.finalSaveButton} onPress={handleFinalSave}>
@@ -263,28 +236,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  audioPlayer: {
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 20,
-  },
-  sliderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '90%',
-    marginBottom: 10,
-  },
-  timeText: {
-    fontSize: 14,
-    width: 40,
-    textAlign: 'center',
-    color: '#333',
-  },
-  audioControls: {
-    flexDirection: 'row',
-    gap: 30,
-    justifyContent: 'center',
   },
   bottomButtons: {
     marginTop: 20,
