@@ -1,21 +1,38 @@
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-WebBrowser.maybeCompleteAuthSession();
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../constants/supabase';
 
+WebBrowser.maybeCompleteAuthSession();
+
 const YOUR_SUPABASE_REF = 'xkesystyxarmnulkngye';
+const YOUR_SUPABASE_CLIENT_ID = '714529884870113'; // 替換為你的 client ID
+
+const discovery = {
+  authorizationEndpoint: `https://${YOUR_SUPABASE_REF}.supabase.co/auth/v1/authorize`,
+};
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+
+  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'petdiary' });
+
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: YOUR_SUPABASE_CLIENT_ID,
+      redirectUri,
+      scopes: ['email', 'openid'],
+      responseType: AuthSession.ResponseType.Code,
+    },
+    discovery
+  );
 
   useEffect(() => {
     const checkRememberedUser = async () => {
@@ -27,6 +44,20 @@ export default function LoginScreen() {
     };
     checkRememberedUser();
   }, []);
+
+  useEffect(() => {
+    const exchangeCode = async () => {
+      if (response?.type === 'success' && response.params.code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(response.params.code);
+        if (error) {
+          Alert.alert('OAuth Error', error.message);
+        } else {
+          router.replace('/home');
+        }
+      }
+    };
+    exchangeCode();
+  }, [response]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -45,26 +76,6 @@ export default function LoginScreen() {
         await AsyncStorage.removeItem('rememberMe');
       }
       router.replace('/home');
-    }
-  };
-
-  const handleOAuthLogin = async (provider: 'facebook') => {
-    const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
-    const authUrl =
-      `https://${YOUR_SUPABASE_REF}.supabase.co/auth/v1/authorize?provider=${provider}` +
-      `&redirect_to=${encodeURIComponent(redirectUri)}`;
-
-    const result = await AuthSession.startAsync({ authUrl });
-
-    if (result.type === 'success' && result.params?.code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(result.params.code);
-      if (error) {
-        Alert.alert('OAuth Error', error.message);
-      } else {
-        router.replace('/home');
-      }
-    } else {
-      Alert.alert('OAuth Cancelled or Failed', result.type);
     }
   };
 
@@ -117,7 +128,7 @@ export default function LoginScreen() {
         <Text style={styles.signInText}>Sign In with Phone</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.signInFacebook} onPress={() => handleOAuthLogin('facebook')}>
+      <TouchableOpacity style={styles.signInFacebook} onPress={() => promptAsync()}>
         <Text style={styles.signInText}>Sign In with Facebook</Text>
       </TouchableOpacity>
 
@@ -149,7 +160,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    color: '#000', // 修正白字問題
+    color: '#000',
   },
   forgot: {
     alignSelf: 'flex-end',
