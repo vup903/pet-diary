@@ -1,13 +1,27 @@
 // File: app/(upload)/upload.tsx
+import { supabase } from '@/constants/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function UploadScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+      } else {
+        setSessionChecked(true);
+      }
+    };
+    checkSession();
+  }, []);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -15,7 +29,9 @@ export default function UploadScreen() {
       Alert.alert('Permission denied', 'Please enable gallery access in settings.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
     }
@@ -27,7 +43,9 @@ export default function UploadScreen() {
       Alert.alert('Permission denied', 'Please enable camera access in settings.');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    });
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
     }
@@ -38,10 +56,12 @@ export default function UploadScreen() {
       Alert.alert('No image selected', 'Please select or take a photo first.');
       return;
     }
-    // 將圖片參數一起傳到 reading 頁
     router.push({ pathname: '/(upload)/reading', params: { image: imageUri } });
-
   };
+
+  if (!sessionChecked) {
+    return null; // 等待 session 確認，避免閃爍
+  }
 
   return (
     <View style={styles.container}>
@@ -52,7 +72,10 @@ export default function UploadScreen() {
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (
-          <Text style={styles.imagePlaceholderText}>Your pet’s photo will appear here{"\n"}Choose from gallery or take a new photo</Text>
+          <Text style={styles.imagePlaceholderText}>
+            Your pet’s photo will appear here{'\n'}
+            Choose from gallery or take a new photo
+          </Text>
         )}
       </TouchableOpacity>
 
@@ -61,7 +84,6 @@ export default function UploadScreen() {
           <Ionicons name="image" size={20} color="white" />
           <Text style={styles.buttonText}>Gallery</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
           <Ionicons name="camera" size={20} color="white" />
           <Text style={styles.buttonText}>Camera</Text>
