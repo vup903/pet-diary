@@ -1,19 +1,28 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../constants/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignIn = () => {
-    // 這裡可加入實際驗證邏輯
-    if (email && password) {
-      // 假設驗證成功
-      router.push('/(upload)/upload-photo');
-    } else {
+  const handleSignIn = async () => {
+    if (!email || !password) {
       Alert.alert('Missing info', 'Please enter email and password');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      Alert.alert('Login failed', error.message);
+    } else {
+      router.push('/(upload)/upload-photo');
     }
   };
 
