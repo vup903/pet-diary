@@ -165,8 +165,9 @@ export default function DiaryResultScreen() {
 
           <Modal visible={modalVisible} transparent={true}>
             <View style={styles.modalBackground}>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseArea} />
-              <Image source={{ uri: imageUri as string }} style={styles.fullImage} />
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseArea}>
+                <Image source={{ uri: imageUri as string }} style={styles.fullImage} />
+              </TouchableOpacity>
             </View>
           </Modal>
         </View>
@@ -262,17 +263,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalCloseArea: {
+    width: "100%",
+    height: "100%",
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   fullImage: {
     width: '90%',
-    height: '60%',
+    height: "90%", 
     resizeMode: 'contain',
-    borderRadius: 12,
-  },
-  modalCloseArea: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
 });
