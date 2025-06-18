@@ -1,8 +1,11 @@
+import { data } from "@/constants/DiaryData";
+import { supabase } from "@/constants/supabase";
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
+  FlatList,
   Image,
   Modal,
   SafeAreaView,
@@ -12,12 +15,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  FlatList,
 } from 'react-native';
 import RNModal from 'react-native-modal';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { data } from "@/constants/DiaryData";
-import { supabase } from "@/constants/supabase";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -139,12 +139,14 @@ export default function HomeScreen() {
         keyExtractor={item => item.id}
       />
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push('../index')}
-      >
-        <Feather name="plus" size={32} color="#fff" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/')}
+        >
+          <Feather name="plus" size={32} color="#fff" />
+        </TouchableOpacity>
+
+
 
       <Modal visible={imageModalVisible} transparent>
         <View style={styles.imageModalOverlay}>

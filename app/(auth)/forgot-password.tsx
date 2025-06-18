@@ -1,6 +1,25 @@
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../../constants/supabase';
 
 export default function ForgotPasswordScreen() {
+  const [email, setEmail] = useState('');
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+    if (error) {
+      Alert.alert('Reset Failed', error.message);
+    } else {
+      Alert.alert('Check your email!', 'We’ve sent you a reset link.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Forgot Password</Text>
@@ -9,9 +28,17 @@ export default function ForgotPasswordScreen() {
         Enter your email and we'll send you a reset link
       </Text>
 
-      <TextInput placeholder="Email" style={styles.input} />
+      <TextInput
+        placeholder="Email"
+        style={styles.input}
+        placeholderTextColor="#999"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-      <TouchableOpacity style={styles.resetButton}>
+      <TouchableOpacity style={styles.resetButton} onPress={handleResetPassword}>
         <Text style={styles.buttonText}>Send Reset Link</Text>
       </TouchableOpacity>
     </View>
@@ -45,6 +72,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
     fontSize: 16,
+    color: '#000', // ⬅️ 字體顏色設定
   },
   resetButton: {
     backgroundColor: '#f48496',
