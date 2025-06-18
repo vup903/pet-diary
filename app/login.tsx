@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import CheckBox from '@react-native-community/checkbox'
+import Checkbox from 'expo-checkbox'
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
@@ -81,8 +81,8 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       <View style={styles.checkboxRow}>
-        <CheckBox value={rememberMe} onValueChange={setRememberMe} />
-        <Text>Remember me</Text>
+        <Checkbox value={rememberMe} onValueChange={setRememberMe} />
+        <Text style={{ marginLeft: 8 }}>Remember me</Text>
       </View>
 
       <TouchableOpacity style={styles.signIn} onPress={handleSignIn}>
