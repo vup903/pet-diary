@@ -2,19 +2,20 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    SafeAreaView,
-    Share,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Modal,
+  SafeAreaView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import RNModal from 'react-native-modal';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { supabase } from '../../constants/supabase';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -65,6 +66,11 @@ export default function HomeScreen() {
     });
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  };
+
   const filtered = diary.text.toLowerCase().includes(searchText.toLowerCase());
 
   return (
@@ -76,8 +82,11 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => setSearchVisible(!searchVisible)}>
             <Feather name="search" size={20} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => Alert.alert('Top menu')}>
-            <Feather name="more-vertical" size={20} />
+          <TouchableOpacity
+            style={styles.moreButton}
+            onPress={(e) => showMenuAt(e)}
+          >
+            <Feather name="more-horizontal" size={24} color="#555" />
           </TouchableOpacity>
         </View>
       </View>
@@ -121,9 +130,9 @@ export default function HomeScreen() {
       {/* Floating Add Button */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push('/(upload)/upload-photo')}
+        onPress={() => router.push('../index')}
       >
-        <Feather name="plus" size={28} color="#fff" />
+        <Feather name="plus" size={32} color="#fff" />
       </TouchableOpacity>
 
       {/* Image Modal */}
@@ -196,6 +205,16 @@ export default function HomeScreen() {
             <Feather name="trash-2" size={18} color="#c0392b" />
             <Text style={[styles.menuText, { color: '#c0392b' }]}>Delete</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: '#eee', marginTop: 6 }]}
+            onPress={() => {
+              setMenuVisible(false);
+              handleLogout();
+            }}
+          >
+            <Feather name="log-out" size={18} color="#d35400" />
+            <Text style={[styles.menuText, { color: '#d35400' }]}>Log Out</Text>
+          </TouchableOpacity>
         </View>
       </RNModal>
 
@@ -229,6 +248,18 @@ const styles = StyleSheet.create({
   iconRow: {
     flexDirection: 'row',
     gap: 20,
+  },
+  moreButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
   searchInput: {
     backgroundColor: '#fff',
@@ -283,9 +314,9 @@ const styles = StyleSheet.create({
     bottom: 90,
     alignSelf: 'center',
     backgroundColor: '#f48496',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -299,7 +330,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    width: 180,
+    width: 200,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
