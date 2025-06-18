@@ -10,7 +10,7 @@ import { supabase } from '../constants/supabase';
 WebBrowser.maybeCompleteAuthSession();
 
 const YOUR_SUPABASE_REF = 'xkesystyxarmnulkngye';
-const YOUR_SUPABASE_CLIENT_ID = '714529884870113'; // 替換為你的 client ID
+const YOUR_SUPABASE_CLIENT_ID = '714529884870113';
 
 const discovery = {
   authorizationEndpoint: `https://${YOUR_SUPABASE_REF}.supabase.co/auth/v1/authorize`,
@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   const redirectUri = AuthSession.makeRedirectUri({ scheme: 'petdiary' });
 
@@ -40,6 +41,8 @@ export default function LoginScreen() {
       const session = await supabase.auth.getSession();
       if (remembered === 'true' && session.data.session) {
         router.replace('/(upload)/upload-photo');
+      } else {
+        setIsCheckingSession(false);
       }
     };
     checkRememberedUser();
@@ -88,6 +91,8 @@ export default function LoginScreen() {
     if (error) Alert.alert('SMS Login failed', error.message);
     else Alert.alert('Check your phone!', 'We sent a login code via SMS.');
   };
+
+  if (isCheckingSession) return null;
 
   return (
     <View style={styles.container}>
