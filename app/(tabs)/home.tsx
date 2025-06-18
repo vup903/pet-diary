@@ -11,10 +11,12 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    FlatList,
 } from 'react-native';
 import RNModal from 'react-native-modal';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { data } from "@/constants/DiaryData"
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,6 +27,7 @@ export default function HomeScreen() {
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [imageModalUrl, setImageModalUrl] = useState('')
 
   const diary = {
     id: '1',
@@ -60,12 +63,22 @@ export default function HomeScreen() {
   const handleEdit = () => {
     setMenuVisible(false);
     router.push({
-      pathname: '/(diary)/1',
+      pathname: '/(upload)/diary-result',
       params: { id: diary.id },
     });
   };
 
-  const filtered = diary.text.toLowerCase().includes(searchText.toLowerCase());
+  // Filter the data based on search text
+  const filteredData = data.filter(item => {
+    if (!searchText) return true; // Show all items if no search text
+
+    const keyword = searchText.trim().toLowerCase()
+    return (
+      item.emotion.toLowerCase().includes(keyword) ||
+      item.text.toLowerCase().includes(keyword) ||
+      item.date.toLowerCase().includes(keyword)
+    );
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,32 +104,34 @@ export default function HomeScreen() {
         />
       )}
 
-      {filtered && (
-        <View style={styles.card}>
-          <TouchableOpacity onPress={() => setImageModalVisible(true)}>
-            <Image source={diary.image} style={styles.image} />
-          </TouchableOpacity>
+      <FlatList 
+        data={filteredData}
+        renderItem={({item}) => (
+          <View style={styles.card}>
+            <TouchableOpacity onPress={() => {
+              setImageModalVisible(true)
+              setImageModalUrl(item.image)
+            }}>
+              <Image source={{ uri: item.image }} style={styles.image} />
+            </TouchableOpacity>
 
-          <Text style={styles.emotion}>{diary.emotion}</Text>
-          <Text style={styles.text}>{diary.text}</Text>
-          <Text style={styles.date}>
-            {diary.date.toLocaleString('en-US', {
-              weekday: 'long',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
+            <Text style={styles.emotion}>{item.emotion}</Text>
+            <Text style={styles.text}>{item.text}</Text>
+            <Text style={styles.date}>
+              {item.date}
+            </Text>
 
-          <TouchableOpacity
-            style={styles.menuIcon}
-            onPress={showMenuAt}
-          >
-            <Feather name="more-horizontal" size={20} color="#555" />
-          </TouchableOpacity>
-        </View>
-      )}
+            <TouchableOpacity
+              style={styles.menuIcon}
+              onPress={showMenuAt}
+            >
+              <Feather name="more-horizontal" size={20} color="#555" />
+            </TouchableOpacity>
+          </View>
+        )}
+        keyExtractor={item => item.id}
+      />
+  
 
       {/* Floating Add Button */}
       <TouchableOpacity
@@ -126,10 +141,9 @@ export default function HomeScreen() {
         <Feather name="plus" size={28} color="#fff" />
       </TouchableOpacity>
 
-      {/* Image Modal */}
-      <Modal visible={imageModalVisible} transparent>
+      <Modal visible={imageModalVisible} transparent >
         <View style={styles.imageModalOverlay}>
-          <Image source={diary.image} style={styles.fullImage} />
+          <Image source={{ uri: imageModalUrl }} style={styles.fullImage} />
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => setImageModalVisible(false)}
@@ -137,7 +151,7 @@ export default function HomeScreen() {
             <Feather name="x" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Card Menu */}
       <RNModal
@@ -241,8 +255,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 40,
-    marginTop: 10,
+    marginBottom: 20,
+    marginLeft: 10,
+    marginRight: 10,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 1 },
