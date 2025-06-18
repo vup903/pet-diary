@@ -1,60 +1,67 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import Checkbox from 'expo-checkbox'
-import { useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { supabase } from '../constants/supabase'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Checkbox from 'expo-checkbox';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../constants/supabase';
 
 export default function LoginScreen() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     const checkRememberedUser = async () => {
-      const remembered = await AsyncStorage.getItem('rememberMe')
-      const { data } = await supabase.auth.getSession()
-      if (remembered === 'true' && data.session) {
-        router.replace('/home')
+      const remembered = await AsyncStorage.getItem('rememberMe');
+      const session = await supabase.auth.getSession();
+      if (remembered === 'true' && session.data.session) {
+        router.replace('/home');
       }
-    }
-    checkRememberedUser()
-  }, [])
+    };
+    checkRememberedUser();
+  }, []);
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Missing info', 'Please enter email and password')
-      return
+      Alert.alert('Missing info', 'Please enter email and password');
+      return;
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
     if (error) {
-      Alert.alert('Login failed', error.message)
+      Alert.alert('Login failed', error.message);
     } else {
       if (rememberMe) {
-        await AsyncStorage.setItem('rememberMe', 'true')
+        await AsyncStorage.setItem('rememberMe', 'true');
       } else {
-        await AsyncStorage.removeItem('rememberMe')
+        await AsyncStorage.removeItem('rememberMe');
       }
-      router.replace('/home')
+      router.replace('/home');
     }
-  }
+  };
 
-  const handleFacebookSignIn = async () => {
+  const handleOAuthLogin = async (provider: 'facebook') => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: { redirectTo: 'yourapp://login-callback' }
-    })
-    if (error) Alert.alert('Facebook login error', error.message)
-  }
+      provider,
+      options: {
+        redirectTo: 'exp://localhost:19000', // ✅ Expo redirect URI
+      },
+    });
 
-  const handlePhoneSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: email  // 使用電話號碼欄位，實際可設為另一個欄位
-    })
-    if (error) Alert.alert('Phone login error', error.message)
-    else Alert.alert('Check your phone', 'OTP code sent via SMS')
-  }
+    if (error) Alert.alert('OAuth Login failed', error.message);
+  };
+
+  const handlePhoneLogin = async () => {
+    if (!email) {
+      Alert.alert('Enter phone number (in E.164 format, e.g., +16693433823)');
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOtp({ phone: email });
+    if (error) Alert.alert('SMS Login failed', error.message);
+    else Alert.alert('Check your phone!', 'We sent a login code via SMS.');
+  };
 
   return (
     <View style={styles.container}>
@@ -65,15 +72,17 @@ export default function LoginScreen() {
         style={styles.input}
         value={email}
         onChangeText={setEmail}
+        placeholderTextColor="#999"
         keyboardType="email-address"
         autoCapitalize="none"
       />
       <TextInput
-        placeholder="Password (for email login)"
+        placeholder="Password"
         secureTextEntry
         style={styles.input}
         value={password}
         onChangeText={setPassword}
+        placeholderTextColor="#999"
       />
 
       <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
@@ -89,11 +98,11 @@ export default function LoginScreen() {
         <Text style={styles.signInText}>Sign In with Email</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.signIn} onPress={handlePhoneSignIn}>
+      <TouchableOpacity style={styles.signInPhone} onPress={handlePhoneLogin}>
         <Text style={styles.signInText}>Sign In with Phone</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.facebook} onPress={handleFacebookSignIn}>
+      <TouchableOpacity style={styles.signInFacebook} onPress={() => handleOAuthLogin('facebook')}>
         <Text style={styles.signInText}>Sign In with Facebook</Text>
       </TouchableOpacity>
 
@@ -103,7 +112,7 @@ export default function LoginScreen() {
         <Text style={styles.signUpText}>Sign Up</Text>
       </TouchableOpacity>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -125,6 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
+    color: '#000', // ✅ 修正輸入字為黑色
   },
   forgot: {
     alignSelf: 'flex-end',
@@ -144,13 +154,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  facebook: {
-    backgroundColor: '#3b5998',
+  signInPhone: {
+    backgroundColor: '#f9a825',
     borderRadius: 20,
     padding: 14,
     width: '100%',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  signInFacebook: {
+    backgroundColor: '#3b5998',
+    borderRadius: 20,
+    padding: 14,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   signInText: {
     color: 'white',
@@ -170,4 +188,4 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-})
+});
