@@ -2,21 +2,22 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    SafeAreaView,
-    Share,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    FlatList,
+  Alert,
+  Image,
+  Modal,
+  SafeAreaView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  FlatList,
 } from 'react-native';
 import RNModal from 'react-native-modal';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { data } from "@/constants/DiaryData"
+import { data } from "@/constants/DiaryData";
+import { supabase } from "@/constants/supabase";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function HomeScreen() {
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [imageModalUrl, setImageModalUrl] = useState('')
+  const [imageModalUrl, setImageModalUrl] = useState('');
 
   const diary = {
     id: '1',
@@ -68,11 +69,19 @@ export default function HomeScreen() {
     });
   };
 
-  // Filter the data based on search text
-  const filteredData = data.filter(item => {
-    if (!searchText) return true; // Show all items if no search text
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      Alert.alert('Logged Out', 'You have been logged out.');
+      router.replace('/');
+    }
+  };
 
-    const keyword = searchText.trim().toLowerCase()
+  const filteredData = data.filter(item => {
+    if (!searchText) return true;
+    const keyword = searchText.trim().toLowerCase();
     return (
       item.emotion.toLowerCase().includes(keyword) ||
       item.text.toLowerCase().includes(keyword) ||
@@ -82,7 +91,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.header}>Diary</Text>
         <View style={styles.iconRow}>
@@ -107,23 +115,19 @@ export default function HomeScreen() {
         />
       )}
 
-      <FlatList 
+      <FlatList
         data={filteredData}
-        renderItem={({item}) => (
+        renderItem={({ item }) => (
           <View style={styles.card}>
             <TouchableOpacity onPress={() => {
-              setImageModalVisible(true)
-              setImageModalUrl(item.image)
+              setImageModalVisible(true);
+              setImageModalUrl(item.image);
             }}>
               <Image source={{ uri: item.image }} style={styles.image} />
             </TouchableOpacity>
-
             <Text style={styles.emotion}>{item.emotion}</Text>
             <Text style={styles.text}>{item.text}</Text>
-            <Text style={styles.date}>
-              {item.date}
-            </Text>
-
+            <Text style={styles.date}>{item.date}</Text>
             <TouchableOpacity
               style={styles.menuIcon}
               onPress={showMenuAt}
@@ -134,9 +138,7 @@ export default function HomeScreen() {
         )}
         keyExtractor={item => item.id}
       />
-  
 
-      {/* Floating Add Button */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => router.push('../index')}
@@ -144,7 +146,7 @@ export default function HomeScreen() {
         <Feather name="plus" size={32} color="#fff" />
       </TouchableOpacity>
 
-      <Modal visible={imageModalVisible} transparent >
+      <Modal visible={imageModalVisible} transparent>
         <View style={styles.imageModalOverlay}>
           <Image source={{ uri: imageModalUrl }} style={styles.fullImage} />
           <TouchableOpacity
@@ -154,9 +156,8 @@ export default function HomeScreen() {
             <Feather name="x" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-      </Modal >
+      </Modal>
 
-      {/* Card Menu */}
       <RNModal
         isVisible={menuVisible}
         backdropOpacity={0.2}
