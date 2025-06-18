@@ -1,9 +1,15 @@
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+WebBrowser.maybeCompleteAuthSession();
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../constants/supabase';
+
+const YOUR_SUPABASE_REF = 'xkesystyxarmnulkngye';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -43,19 +49,28 @@ export default function LoginScreen() {
   };
 
   const handleOAuthLogin = async (provider: 'facebook') => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: 'exp://localhost:19000', // ✅ Expo redirect URI
-      },
-    });
+    const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
+    const authUrl =
+      `https://${YOUR_SUPABASE_REF}.supabase.co/auth/v1/authorize?provider=${provider}` +
+      `&redirect_to=${encodeURIComponent(redirectUri)}`;
 
-    if (error) Alert.alert('OAuth Login failed', error.message);
+    const result = await AuthSession.startAsync({ authUrl });
+
+    if (result.type === 'success' && result.params?.code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(result.params.code);
+      if (error) {
+        Alert.alert('OAuth Error', error.message);
+      } else {
+        router.replace('/home');
+      }
+    } else {
+      Alert.alert('OAuth Cancelled or Failed', result.type);
+    }
   };
 
   const handlePhoneLogin = async () => {
-    if (!email) {
-      Alert.alert('Enter phone number (in E.164 format, e.g., +16693433823)');
+    if (!email.startsWith('+')) {
+      Alert.alert('Invalid Phone', 'Phone must be in +123 format');
       return;
     }
     const { error } = await supabase.auth.signInWithOtp({ phone: email });
@@ -134,7 +149,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    color: '#000', // ✅ 修正輸入字為黑色
+    color: '#000', // 修正白字問題
   },
   forgot: {
     alignSelf: 'flex-end',
