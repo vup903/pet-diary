@@ -39,7 +39,7 @@ export default function LoginScreen() {
       const remembered = await AsyncStorage.getItem('rememberMe');
       const session = await supabase.auth.getSession();
       if (remembered === 'true' && session.data.session) {
-        router.replace('/home');
+        router.replace('/(upload)/upload-photo');
       }
     };
     checkRememberedUser();
@@ -52,7 +52,7 @@ export default function LoginScreen() {
         if (error) {
           Alert.alert('OAuth Error', error.message);
         } else {
-          router.replace('/home');
+          router.replace('/(upload)/upload-photo');
         }
       }
     };
@@ -75,7 +75,7 @@ export default function LoginScreen() {
       } else {
         await AsyncStorage.removeItem('rememberMe');
       }
-      router.replace('/home');
+      router.replace('/(upload)/upload-photo');
     }
   };
 
