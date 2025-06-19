@@ -92,7 +92,14 @@ export default function LoginScreen() {
     else Alert.alert('Check your phone!', 'We sent a login code via SMS.');
   };
 
-  if (isCheckingSession) return null;
+  if (isCheckingSession) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Pet Diary</Text>
+        <Text style={{ marginTop: 20, color: '#555' }}>Checking session...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

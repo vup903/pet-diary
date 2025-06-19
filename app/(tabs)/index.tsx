@@ -1,10 +1,31 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { supabase } from '../../constants/supabase';
 
 export default function HomeScreen() {
   const [selectedPet, setSelectedPet] = useState<'cat' | 'dog' | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const handleStart = async () => {
+    if (!selectedPet) return;
+    setLoading(true);
+
+    const { data } = await supabase.auth.getSession();
+
+    if (data.session) {
+      router.replace('/(upload)/upload-photo');
+    } else {
+      router.replace('/login');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -17,14 +38,20 @@ export default function HomeScreen() {
 
       <View style={styles.petButtons}>
         <TouchableOpacity
-          style={[styles.petButton, selectedPet === 'cat' && styles.activePetButton]}
+          style={[
+            styles.petButton,
+            selectedPet === 'cat' && styles.activePetButton,
+          ]}
           onPress={() => setSelectedPet('cat')}
         >
           <Text style={styles.petIcon}>🐱</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.petButton, selectedPet === 'dog' && styles.activePetButton]}
+          style={[
+            styles.petButton,
+            selectedPet === 'dog' && styles.activePetButton,
+          ]}
           onPress={() => setSelectedPet('dog')}
         >
           <Text style={styles.petIcon}>🐶</Text>
@@ -32,14 +59,15 @@ export default function HomeScreen() {
       </View>
 
       <TouchableOpacity
-        style={[
-          styles.startButton,
-          !selectedPet && styles.disabledButton,
-        ]}
-        onPress={() => selectedPet && router.push('/login')}
-        disabled={!selectedPet}
+        style={[styles.startButton, !selectedPet && styles.disabledButton]}
+        onPress={handleStart}
+        disabled={!selectedPet || loading}
       >
-        <Text style={styles.startButtonText}>Let's Go!</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.startButtonText}>Let's Go!</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
