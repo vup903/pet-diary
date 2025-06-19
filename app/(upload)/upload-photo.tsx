@@ -1,31 +1,40 @@
 // File: app/(upload)/upload.tsx
 import { supabase } from '@/constants/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function UploadScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
+    (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.replace('/login');
       } else {
         setSessionChecked(true);
       }
-    };
-    checkSession();
+    })();
   }, []);
 
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) {
       Alert.alert('Permission denied', 'Please enable gallery access in settings.');
       return;
     }
@@ -38,8 +47,8 @@ export default function UploadScreen() {
   };
 
   const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) {
       Alert.alert('Permission denied', 'Please enable camera access in settings.');
       return;
     }
@@ -51,17 +60,61 @@ export default function UploadScreen() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!imageUri) {
       Alert.alert('No image selected', 'Please select or take a photo first.');
       return;
     }
-    router.push({ pathname: '/(upload)/reading', params: { image: imageUri } });
+    setUploading(true);
+
+    try {
+      const fileName = `${Date.now()}.jpg`;
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const buffer = Buffer.from(base64, 'base64');
+
+      const { error: uploadError } = await supabase.storage
+        .from('pet-photos')
+        .upload(fileName, buffer, {
+          contentType: 'image/jpeg',
+        });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase
+        .storage
+        .from('pet-photos')
+        .getPublicUrl(fileName);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user.id;
+      if (!userId) throw new Error('No user ID');
+
+      const { error: dbError } = await supabase.from('photos').insert([
+        { image_url: publicUrl, user_id: userId },
+      ]);
+      if (dbError) throw dbError;
+
+      const response = await fetch('https://your-backend.com/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: publicUrl }),
+      });
+      if (!response.ok) throw new Error('Analysis failed');
+      const result = await response.json();
+
+      router.push({
+        pathname: '/(upload)/reading',
+        params: { image: publicUrl, analysis: JSON.stringify(result) },
+      });
+    } catch (err: any) {
+      Alert.alert('Upload Error', err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  if (!sessionChecked) {
-    return null; // 等待 session 確認，避免閃爍
-  }
+  if (!sessionChecked) return null;
 
   return (
     <View style={styles.container}>
@@ -73,8 +126,7 @@ export default function UploadScreen() {
           <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (
           <Text style={styles.imagePlaceholderText}>
-            Your pet’s photo will appear here{'\n'}
-            Choose from gallery or take a new photo
+            Your pet’s photo will appear here{'\n'}Choose from gallery or take a new photo
           </Text>
         )}
       </TouchableOpacity>
@@ -90,8 +142,16 @@ export default function UploadScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.uploadButton} onPress={handleUpload}>
-        <Text style={styles.uploadText}>Upload</Text>
+      <TouchableOpacity
+        style={styles.uploadButton}
+        onPress={handleUpload}
+        disabled={uploading}
+      >
+        {uploading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.uploadText}>Upload</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
