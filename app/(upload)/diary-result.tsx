@@ -74,6 +74,8 @@ export default function DiaryResultScreen() {
     };
     console.log('Saving to DB:', dataToSave);
     Alert.alert('Saved!', 'Your pet diary has been saved.');
+
+    goHome()
   };
 
   const startEditing = () => {
@@ -99,7 +101,7 @@ export default function DiaryResultScreen() {
             <Image source={{ uri: imageUri as string }} style={styles.avatar} />
           </TouchableOpacity>
 
-          <Text style={styles.petName}>{emotion}</Text>
+          <Text style={styles.petEmotion}>{emotion}</Text>
 
           <View style={styles.diaryBox}>
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -157,8 +159,6 @@ export default function DiaryResultScreen() {
                   <Text style={styles.finalSaveText}>Save</Text>
                 </TouchableOpacity>
 
-                {/* 裸 Home icon */}
-                <Feather name="home" size={24} color="#7d57c7" onPress={goHome} />
               </View>
             </>
           )}
@@ -181,17 +181,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffcdd5',
     flex: 1,
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 20,
     paddingHorizontal: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     marginBottom: 15,
   },
-  petName: {
-    fontSize: 22,
+  petEmotion: {
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#333',

@@ -77,7 +77,6 @@ export default function ResultScreen() {
           style={styles.petImage}
         />
         <Text style={styles.emotion}>Grumpy</Text>
-        <Text style={styles.confidence}>Confidence: 80%</Text>
       </View>
 
       <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 30,
   },
@@ -104,17 +103,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 24,
+    width: 300,
+    height: 300,
     alignItems: 'center',
     marginBottom: 30,
   },
   petImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 16,
+    marginTop: 10,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    marginBottom: 30,
   },
   emotion: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 8,
   },
@@ -127,10 +129,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 25,
+    width: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   generateText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 26,
   },
 });
