@@ -19,96 +19,98 @@ export default function UploadScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Upload] Checking session...');
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log('[Upload] Session data:', session);
       if (!session) {
         router.replace('/login');
-      } else {
-        setSessionChecked(true);
+        return;
       }
+      setUserId(session.user.id);
+      setSessionChecked(true);
     })();
   }, []);
 
   const pickImage = async () => {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) {
-      Alert.alert('Permission denied', 'Please enable gallery access in settings.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
+    console.log('[Upload] Media permissions granted:', granted);
+    if (!granted) return Alert.alert('Permission denied', '請允許存取相簿');
+    const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-    }
+    console.log('[Upload] Pick result:', res);
+    if (!res.canceled) setImageUri(res.assets[0].uri);
   };
 
   const takePhoto = async () => {
     const { granted } = await ImagePicker.requestCameraPermissionsAsync();
-    if (!granted) {
-      Alert.alert('Permission denied', 'Please enable camera access in settings.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
+    console.log('[Upload] Camera permissions granted:', granted);
+    if (!granted) return Alert.alert('Permission denied', '請允許使用相機');
+    const res = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-    }
+    console.log('[Upload] Camera result:', res);
+    if (!res.canceled) setImageUri(res.assets[0].uri);
   };
 
   const handleUpload = async () => {
-    if (!imageUri) {
-      Alert.alert('No image selected', 'Please select or take a photo first.');
-      return;
-    }
+    console.log('[Upload] Start upload, imageUri:', imageUri, 'userId:', userId);
+    if (!imageUri) return Alert.alert('No image selected', '請選擇或拍照一張寵物照片');
+    if (!userId) return Alert.alert('Not logged in', '請重新登入');
     setUploading(true);
 
     try {
       const fileName = `${Date.now()}.jpg`;
-      const base64 = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const buffer = Buffer.from(base64, 'base64');
+      console.log('[Upload] FileName:', fileName);
+
+      const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+      console.log('[Upload] Base64 size:', base64.length);
+
+      const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      console.log('[Upload] Binary length:', binary.length);
 
       const { error: uploadError } = await supabase.storage
         .from('pet-photos')
-        .upload(fileName, buffer, {
-          contentType: 'image/jpeg',
-        });
+        .upload(fileName, binary, { contentType: 'image/jpeg' });
+      console.log('[Upload] Storage uploadError:', uploadError);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase
-        .storage
-        .from('pet-photos')
-        .getPublicUrl(fileName);
+      const { data } = supabase.storage.from('pet-photos').getPublicUrl(fileName);
+      console.log('[Upload] Public URL data:', data);
+      const publicUrl = data.publicUrl;
+      console.log('[Upload] publicUrl:', publicUrl);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user.id;
-      if (!userId) throw new Error('No user ID');
-
-      const { error: dbError } = await supabase.from('photos').insert([
-        { image_url: publicUrl, user_id: userId },
-      ]);
+      const { error: dbError } = await supabase
+        .from('photos')
+        .insert([{ image_url: publicUrl, user_id: userId }]);
+      console.log('[Upload] DB insert error:', dbError);
       if (dbError) throw dbError;
 
-      const response = await fetch('https://your-backend.com/api/analyze', {
+      console.log('[Upload] Calling backend analyze', publicUrl);
+      const res = await fetch('https://your-backend.com/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: publicUrl }),
       });
-      if (!response.ok) throw new Error('Analysis failed');
-      const result = await response.json();
+      console.log('[Upload] Backend status:', res.status);
+      if (!res.ok) throw new Error('Analysis failed');
+      const result = await res.json();
+      console.log('[Upload] Analysis result:', result);
 
       router.push({
         pathname: '/(upload)/reading',
         params: { image: publicUrl, analysis: JSON.stringify(result) },
       });
     } catch (err: any) {
-      Alert.alert('Upload Error', err.message);
+      console.error('[Upload] Error caught:', err);
+      Alert.alert('Upload Error', err?.message ?? err);
     } finally {
       setUploading(false);
     }
@@ -147,11 +149,7 @@ export default function UploadScreen() {
         onPress={handleUpload}
         disabled={uploading}
       >
-        {uploading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.uploadText}>Upload</Text>
-        )}
+        {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.uploadText}>Upload</Text>}
       </TouchableOpacity>
     </View>
   );
